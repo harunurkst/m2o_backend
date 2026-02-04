@@ -53,6 +53,7 @@ INSTALLED_APPS = [
     'rest_framework',
     'rest_framework_simplejwt',
     'rest_framework_simplejwt.token_blacklist',
+    'drf_spectacular',
 
     # Local apps
     'accounts',
@@ -145,6 +146,7 @@ REST_FRAMEWORK = {
     'DEFAULT_PERMISSION_CLASSES': [
         'rest_framework.permissions.IsAuthenticated',
     ],
+    'DEFAULT_SCHEMA_CLASS': 'drf_spectacular.openapi.AutoSchema', 
 }
 
 # Simple JWT
@@ -164,3 +166,30 @@ EMAIL_USE_TLS = env.bool('EMAIL_USE_TLS', True)
 EMAIL_HOST_USER = env.str('EMAIL_HOST_USER')
 EMAIL_HOST_PASSWORD = env.str('EMAIL_HOST_PASSWORD')
 DEFAULT_FROM_EMAIL = env.str('DEFAULT_FROM_EMAIL', 'noreply@yourdomain.com')
+
+
+# API Documentation with drf-spectacular
+SPECTACULAR_SETTINGS = {
+    'TITLE': 'Authentication API',
+    'DESCRIPTION': 'API documentation for JWT authentication with email verification',
+    'VERSION': '1.0.0',
+    'SERVE_INCLUDE_SCHEMA': False,
+    
+    # Authentication
+    'SECURITY': [{'bearerAuth': []}],
+    'COMPONENT_SPLIT_REQUEST': True,
+    
+    # JWT Configuration
+    'SWAGGER_UI_SETTINGS': {
+        'deepLinking': True,
+        'persistAuthorization': True,
+        'displayOperationId': True,
+    },
+    'SECURITY_DEFINITIONS': {
+        'bearerAuth': {
+            'type': 'http',
+            'scheme': 'bearer',
+            'bearerFormat': 'JWT',
+        }
+    },
+}
