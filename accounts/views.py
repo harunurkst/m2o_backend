@@ -1,9 +1,10 @@
-from rest_framework import status
+from rest_framework import status, serializers as drf_serializers
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.generics import RetrieveUpdateAPIView
 from rest_framework_simplejwt.tokens import RefreshToken
+from drf_spectacular.utils import extend_schema, OpenApiExample, inline_serializer
 
 from .serializers import (
     RegisterSerializer,
@@ -15,11 +16,46 @@ from .serializers import (
 from .services import AuthService, EmailService
 
 
+
 class RegisterView(APIView):
     """User registration endpoint"""
     
     permission_classes = [AllowAny]
     
+    @extend_schema(
+        request=RegisterSerializer,
+        responses={
+            201: inline_serializer(
+                name='RegisterResponse',
+                fields={
+                    'message': drf_serializers.CharField(),
+                    'email': drf_serializers.EmailField(),
+                }
+            )
+        },
+        examples=[
+            OpenApiExample(
+                'Register Request',
+                value={
+                    "email": "user@example.com",
+                    "password": "SecurePass123!",
+                    "password2": "SecurePass123!",
+                    "first_name": "John",
+                    "last_name": "Doe"
+                },
+                request_only=True
+            ),
+            OpenApiExample(
+                'Register Response',
+                value={
+                    "message": "Registration successful. Please check your email to verify your account.",
+                    "email": "user@example.com"
+                },
+                response_only=True
+            )
+        ],
+        tags=['Authentication']
+    )
     def post(self, request):
         serializer = RegisterSerializer(data=request.data)
         
@@ -52,6 +88,23 @@ class VerifyEmailView(APIView):
     
     permission_classes = [AllowAny]
     
+    @extend_schema(
+        request=None,
+        responses={
+            200: inline_serializer(
+                name='VerifyEmailResponse',
+                fields={'message': drf_serializers.CharField()}
+            )
+        },
+        examples=[
+            OpenApiExample(
+                'Verify Email Response',
+                value={"message": "Email verified successfully"},
+                response_only=True
+            )
+        ],
+        tags=['Authentication']
+    )
     def get(self, request, token):
         user, message = EmailService.verify_token(token)
         
@@ -66,6 +119,28 @@ class ResendVerificationView(APIView):
     
     permission_classes = [AllowAny]
     
+    @extend_schema(
+        request=EmailSerializer,
+        responses={
+            200: inline_serializer(
+                name='ResendVerificationResponse',
+                fields={'message': drf_serializers.CharField()}
+            )
+        },
+        examples=[
+            OpenApiExample(
+                'Resend Verification Request',
+                value={"email": "user@example.com"},
+                request_only=True
+            ),
+            OpenApiExample(
+                'Resend Verification Response',
+                value={"message": "Verification email sent"},
+                response_only=True
+            )
+        ],
+        tags=['Authentication']
+    )
     def post(self, request):
         serializer = EmailSerializer(data=request.data)
         
@@ -103,6 +178,45 @@ class LoginView(APIView):
     
     permission_classes = [AllowAny]
     
+    @extend_schema(
+        request=LoginSerializer,
+        responses={
+            200: inline_serializer(
+                name='LoginResponse',
+                fields={
+                    'access': drf_serializers.CharField(),
+                    'refresh': drf_serializers.CharField(),
+                    'user': UserSerializer(),
+                }
+            )
+        },
+        examples=[
+            OpenApiExample(
+                'Login Request',
+                value={
+                    "email": "user@example.com",
+                    "password": "SecurePass123!"
+                },
+                request_only=True
+            ),
+            OpenApiExample(
+                'Login Response',
+                value={
+                    "access": "eyJ0eXAiOiJKV1QiLCJhbGc...",
+                    "refresh": "eyJ0eXAiOiJKV1QiLCJhbGc...",
+                    "user": {
+                        "id": 1,
+                        "email": "user@example.com",
+                        "first_name": "John",
+                        "last_name": "Doe",
+                        "is_verified": True
+                    }
+                },
+                response_only=True
+            )
+        ],
+        tags=['Authentication']
+    )
     def post(self, request):
         serializer = LoginSerializer(data=request.data)
         
@@ -126,6 +240,23 @@ class LogoutView(APIView):
     
     permission_classes = [IsAuthenticated]
     
+    @extend_schema(
+        request=None,
+        responses={
+            200: inline_serializer(
+                name='LogoutResponse',
+                fields={'message': drf_serializers.CharField()}
+            )
+        },
+        examples=[
+            OpenApiExample(
+                'Logout Response',
+                value={"message": "Logged out successfully"},
+                response_only=True
+            )
+        ],
+        tags=['Authentication']
+    )
     def post(self, request):
         try:
             refresh_token = request.data.get('refresh')
@@ -142,6 +273,29 @@ class UserProfileView(RetrieveUpdateAPIView):
     permission_classes = [IsAuthenticated]
     serializer_class = UserSerializer
     
+    @extend_schema(
+        responses={200: UserSerializer},
+        tags=['Authentication']
+    )
+    def get(self, request, *args, **kwargs):
+        return super().get(request, *args, **kwargs)
+    
+    @extend_schema(
+        request=UserSerializer,
+        responses={200: UserSerializer},
+        tags=['Authentication']
+    )
+    def put(self, request, *args, **kwargs):
+        return super().put(request, *args, **kwargs)
+    
+    @extend_schema(
+        request=UserSerializer,
+        responses={200: UserSerializer},
+        tags=['Authentication']
+    )
+    def patch(self, request, *args, **kwargs):
+        return super().patch(request, *args, **kwargs)
+    
     def get_object(self):
         return self.request.user
 
@@ -151,6 +305,32 @@ class ChangePasswordView(APIView):
     
     permission_classes = [IsAuthenticated]
     
+    @extend_schema(
+        request=ChangePasswordSerializer,
+        responses={
+            200: inline_serializer(
+                name='ChangePasswordResponse',
+                fields={'message': drf_serializers.CharField()}
+            )
+        },
+        examples=[
+            OpenApiExample(
+                'Change Password Request',
+                value={
+                    "old_password": "OldPass123!",
+                    "new_password": "NewPass123!",
+                    "new_password2": "NewPass123!"
+                },
+                request_only=True
+            ),
+            OpenApiExample(
+                'Change Password Response',
+                value={"message": "Password updated successfully"},
+                response_only=True
+            )
+        ],
+        tags=['Authentication']
+    )
     def post(self, request):
         serializer = ChangePasswordSerializer(data=request.data)
         

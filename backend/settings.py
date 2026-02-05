@@ -170,8 +170,8 @@ DEFAULT_FROM_EMAIL = env.str('DEFAULT_FROM_EMAIL', 'noreply@yourdomain.com')
 
 # API Documentation with drf-spectacular
 SPECTACULAR_SETTINGS = {
-    'TITLE': 'Authentication API',
-    'DESCRIPTION': 'API documentation for JWT authentication with email verification',
+    'TITLE': 'Multi-Tenant SaaS API',
+    'DESCRIPTION': 'API for organization and business onboarding with multi-tenant support. Includes JWT authentication, organization management, business management, and integration support for Facebook, WhatsApp, and Slack.',
     'VERSION': '1.0.0',
     'SERVE_INCLUDE_SCHEMA': False,
     
@@ -184,6 +184,8 @@ SPECTACULAR_SETTINGS = {
         'deepLinking': True,
         'persistAuthorization': True,
         'displayOperationId': True,
+        'filter': True,
+        'tryItOutEnabled': True,
     },
     'SECURITY_DEFINITIONS': {
         'bearerAuth': {
@@ -192,4 +194,15 @@ SPECTACULAR_SETTINGS = {
             'bearerFormat': 'JWT',
         }
     },
+    
+    # Schema settings
+    'SCHEMA_PATH_PREFIX': '/api/',
+    'SORT_OPERATIONS': False,
+    'TAGS': [
+        {'name': 'Authentication', 'description': 'User registration, login, and email verification'},
+        {'name': 'Organizations', 'description': 'Organization onboarding and management'},
+        {'name': 'Businesses', 'description': 'Business onboarding and management'},
+        {'name': 'Integrations', 'description': 'Integration management (Facebook, WhatsApp, Slack)'},
+    ],
 }
+

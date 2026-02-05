@@ -1,5 +1,6 @@
 from django.urls import path
 from rest_framework_simplejwt.views import TokenRefreshView, TokenVerifyView
+from rest_framework.routers import DefaultRouter
 from .views import (
     RegisterView,
     LoginView,
@@ -9,8 +10,13 @@ from .views import (
     UserProfileView,
     ChangePasswordView,
 )
+from .viewsets import OrganizationViewSet, BusinessViewSet, IntegrationViewSet
 
 app_name = 'accounts'
+
+# Router for ViewSets
+router = DefaultRouter()
+router.register(r'organizations', OrganizationViewSet, basename='organization')
 
 urlpatterns = [
     # Authentication
@@ -29,4 +35,39 @@ urlpatterns = [
     # JWT token management
     path('token/refresh/', TokenRefreshView.as_view(), name='token-refresh'),
     path('token/verify/', TokenVerifyView.as_view(), name='token-verify'),
+    
+    # Multi-tenant API - Nested routes
+    path(
+        'organizations/<int:organization_id>/businesses/',
+        BusinessViewSet.as_view({'get': 'list', 'post': 'create'}),
+        name='organization-businesses-list'
+    ),
+    path(
+        'organizations/<int:organization_id>/businesses/<int:id>/',
+        BusinessViewSet.as_view({
+            'get': 'retrieve',
+            'put': 'update',
+            'patch': 'partial_update',
+            'delete': 'destroy'
+        }),
+        name='organization-businesses-detail'
+    ),
+    path(
+        'businesses/<int:business_id>/integrations/',
+        IntegrationViewSet.as_view({'get': 'list', 'post': 'create'}),
+        name='business-integrations-list'
+    ),
+    path(
+        'businesses/<int:business_id>/integrations/<int:id>/',
+        IntegrationViewSet.as_view({
+            'get': 'retrieve',
+            'put': 'update',
+            'patch': 'partial_update',
+            'delete': 'destroy'
+        }),
+        name='business-integrations-detail'
+    ),
 ]
+
+# Add router URLs
+urlpatterns += router.urls
