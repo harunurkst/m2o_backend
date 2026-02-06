@@ -29,7 +29,9 @@ class RegisterView(APIView):
                 name='RegisterResponse',
                 fields={
                     'message': drf_serializers.CharField(),
-                    'email': drf_serializers.EmailField(),
+                    'access': drf_serializers.CharField(),
+                    'refresh': drf_serializers.CharField(),
+                    'user': UserSerializer(),
                 }
             )
         },
@@ -48,8 +50,16 @@ class RegisterView(APIView):
             OpenApiExample(
                 'Register Response',
                 value={
-                    "message": "Registration successful. Please check your email to verify your account.",
-                    "email": "user@example.com"
+                    "message": "Registration successful. You are now logged in.",
+                    "access": "eyJ0eXAiOiJKV1QiLCJhbGc...",
+                    "refresh": "eyJ0eXAiOiJKV1QiLCJhbGc...",
+                    "user": {
+                        "id": 1,
+                        "email": "user@example.com",
+                        "first_name": "John",
+                        "last_name": "Doe",
+                        "is_verified": True
+                    }
                 },
                 response_only=True
             )
@@ -74,10 +84,22 @@ class RegisterView(APIView):
         if error:
             return Response({'error': error}, status=status.HTTP_400_BAD_REQUEST)
         
+        # Generate tokens for immediate login
+        from rest_framework_simplejwt.tokens import RefreshToken
+        refresh = RefreshToken.for_user(user)
+        
         return Response(
             {
-                'message': 'Registration successful. Please check your email to verify your account.',
-                'email': user.email
+                'message': 'Registration successful. You are now logged in.',
+                'access': str(refresh.access_token),
+                'refresh': str(refresh),
+                'user': {
+                    'id': user.id,
+                    'email': user.email,
+                    'first_name': user.first_name,
+                    'last_name': user.last_name,
+                    'is_verified': user.is_verified
+                }
             },
             status=status.HTTP_201_CREATED
         )

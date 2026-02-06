@@ -81,32 +81,26 @@ class AuthService:
     @staticmethod
     def register_user(email, password, first_name='', last_name='', request=None):
         """
-        Register a new user and send verification email
+        Register a new user directly without email verification
         Returns: (user, error_message)
         """
         # Check if user exists
         if CustomUser.objects.filter(email=email).exists():
             return None, "Email already registered"
         
-        # Create user
+        # Create user with verified and active status
         try:
             user = CustomUser.objects.create_user(
                 email=email,
                 password=password,
                 first_name=first_name,
-                last_name=last_name
+                last_name=last_name,
+                is_verified=True,  # Skip email verification
+                is_active=True     # Activate immediately
             )
-        except Exception as e:
-            return None, str(e)
-        
-        # Send verification email
-        try:
-            EmailService.send_verification_email(user, request)
             return user, None
         except Exception as e:
-            # Rollback: delete user if email fails
-            user.delete()
-            return None, f"Failed to send verification email: {str(e)}"
+            return None, str(e)
     
     @staticmethod
     def login_user(email, password):
@@ -123,10 +117,7 @@ class AuthService:
             return None, "Invalid credentials"
         
         if not user.is_active:
-            return None, "Account not activated. Please verify your email."
-        
-        if not user.is_verified:
-            return None, "Email not verified. Please check your email."
+            return None, "Account is not active."
         
         # Generate tokens
         from rest_framework_simplejwt.tokens import RefreshToken
@@ -140,5 +131,6 @@ class AuthService:
                 'email': user.email,
                 'first_name': user.first_name,
                 'last_name': user.last_name,
+                'is_verified': user.is_verified,
             }
         }, None
