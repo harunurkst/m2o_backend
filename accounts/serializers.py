@@ -61,7 +61,7 @@ class EmailSerializer(serializers.Serializer):
 # Multi-Tenant Serializers
 # ============================================================================
 
-from .models import Organization, OrganizationMembership, Business, Integration, FacebookPageIntegration
+from .models import Organization, OrganizationMembership, Business
 
 
 class OrganizationMembershipSerializer(serializers.ModelSerializer):
@@ -209,47 +209,3 @@ class BusinessCreateSerializer(serializers.ModelSerializer):
                 "Business with this slug already exists in this organization."
             )
         return value
-
-
-class FacebookPageIntegrationSerializer(serializers.ModelSerializer):
-    """Serializer for Facebook Page integration details"""
-    
-    class Meta:
-        model = FacebookPageIntegration
-        fields = [
-            'page_id', 'page_name', 'page_category', 'page_url',
-            'access_token', 'page_access_token'
-        ]
-        extra_kwargs = {
-            'access_token': {'write_only': True},
-            'page_access_token': {'write_only': True}
-        }
-
-
-class IntegrationSerializer(serializers.ModelSerializer):
-    """Serializer for integration"""
-    
-    business_name = serializers.CharField(source='business.name', read_only=True)
-    facebook_page_details = FacebookPageIntegrationSerializer(read_only=True)
-    
-    class Meta:
-        model = Integration
-        fields = [
-            'id', 'business', 'business_name', 'integration_type', 'name',
-            'is_active', 'config', 'created_at', 'updated_at', 'last_synced_at',
-            'facebook_page_details'
-        ]
-        read_only_fields = ['id', 'created_at', 'updated_at', 'last_synced_at']
-    
-    def validate(self, attrs):
-        """Validate user has access to business"""
-        request = self.context.get('request')
-        business = attrs.get('business')
-        
-        # Check if user is a member of the business's organization
-        if not business.organization.members.filter(id=request.user.id).exists():
-            raise serializers.ValidationError(
-                "You don't have permission to create integrations for this business."
-            )
-        
-        return attrs

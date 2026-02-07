@@ -12,7 +12,7 @@ from drf_spectacular.utils import (
 )
 from rest_framework import serializers as drf_serializers
 
-from .models import Organization, OrganizationMembership, Business, Integration, FacebookPageIntegration
+from .models import Organization, OrganizationMembership, Business
 from .serializers import (
     OrganizationListSerializer,
     OrganizationDetailSerializer,
@@ -20,8 +20,6 @@ from .serializers import (
     OrganizationMembershipSerializer,
     BusinessSerializer,
     BusinessCreateSerializer,
-    IntegrationSerializer,
-    FacebookPageIntegrationSerializer,
 )
 from .permissions import IsOrganizationMember, IsOrganizationAdmin, IsBusinessOwner
 
@@ -399,111 +397,3 @@ class BusinessViewSet(viewsets.ModelViewSet):
         instance.is_active = False
         instance.save()
 
-
-class IntegrationViewSet(viewsets.ModelViewSet):
-    """
-    ViewSet for Integration management.
-    
-    Provides endpoints for creating and managing integrations
-    (Facebook, WhatsApp, Slack) for businesses.
-    """
-    
-    serializer_class = IntegrationSerializer
-    permission_classes = [IsAuthenticated]
-    lookup_field = 'id'
-    
-    def get_queryset(self):
-        """Return integrations for the business"""
-        business_id = self.kwargs.get('business_id')
-        return Integration.objects.filter(
-            business_id=business_id,
-            business__organization__members=self.request.user,
-            is_active=True
-        ).select_related('business', 'business__organization')
-    
-    @extend_schema(
-        summary="Create integration",
-        description="Create a new integration for a business. Supports Facebook Page, WhatsApp, and Slack integrations.",
-        request=IntegrationSerializer,
-        responses={
-            201: IntegrationSerializer,
-            400: OpenApiResponse(description="Validation error")
-        },
-        examples=[
-            OpenApiExample(
-                'Create Facebook Integration Request',
-                value={
-                    "integration_type": "FACEBOOK_PAGE",
-                    "name": "Main Facebook Page",
-                    "config": {
-                        "auto_reply": True,
-                        "webhook_enabled": True
-                    }
-                },
-                request_only=True
-            ),
-            OpenApiExample(
-                'Create Integration Response',
-                value={
-                    "id": 1,
-                    "business": 1,
-                    "business_name": "E-commerce Store",
-                    "integration_type": "FACEBOOK_PAGE",
-                    "name": "Main Facebook Page",
-                    "is_active": True,
-                    "config": {
-                        "auto_reply": True,
-                        "webhook_enabled": True
-                    },
-                    "created_at": "2026-02-05T12:00:00Z",
-                    "updated_at": "2026-02-05T12:00:00Z",
-                    "last_synced_at": None,
-                    "facebook_page_details": None
-                },
-                response_only=True
-            )
-        ],
-        tags=['Integrations']
-    )
-    def create(self, request, *args, **kwargs):
-        return super().create(request, *args, **kwargs)
-    
-    @extend_schema(
-        summary="List integrations",
-        description="Get all active integrations for the specified business.",
-        responses={200: IntegrationSerializer(many=True)},
-        examples=[
-            OpenApiExample(
-                'List Integrations Response',
-                value=[
-                    {
-                        "id": 1,
-                        "business": 1,
-                        "business_name": "E-commerce Store",
-                        "integration_type": "FACEBOOK_PAGE",
-                        "name": "Main Facebook Page",
-                        "is_active": True,
-                        "config": {},
-                        "created_at": "2026-02-05T12:00:00Z",
-                        "updated_at": "2026-02-05T12:00:00Z",
-                        "last_synced_at": "2026-02-05T15:00:00Z",
-                        "facebook_page_details": {
-                            "page_id": "123456789",
-                            "page_name": "My Business Page",
-                            "page_category": "E-commerce",
-                            "page_url": "https://facebook.com/mybusiness"
-                        }
-                    }
-                ],
-                response_only=True
-            )
-        ],
-        tags=['Integrations']
-    )
-    def list(self, request, *args, **kwargs):
-        return super().list(request, *args, **kwargs)
-    
-    def perform_destroy(self, instance):
-        """Soft delete integration"""
-        instance.is_active = False
-        instance.save()

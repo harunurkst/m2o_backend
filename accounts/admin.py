@@ -3,7 +3,7 @@ from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
 from django.utils.translation import gettext_lazy as _
 from .models import (
     CustomUser, EmailVerificationToken, Organization, OrganizationMembership,
-    Business, Integration, FacebookPageIntegration
+    Business
 )
 
 
@@ -103,14 +103,6 @@ class OrganizationMembershipAdmin(admin.ModelAdmin):
     )
 
 
-class IntegrationInline(admin.TabularInline):
-    """Inline admin for integrations within business"""
-    model = Integration
-    extra = 0
-    fields = ['name', 'integration_type', 'is_active', 'created_at', 'last_synced_at']
-    readonly_fields = ['created_at', 'last_synced_at']
-    show_change_link = True
-
 
 @admin.register(Business)
 class BusinessAdmin(admin.ModelAdmin):
@@ -128,58 +120,4 @@ class BusinessAdmin(admin.ModelAdmin):
         (_('Details'), {'fields': ('description',)}),
         (_('Status'), {'fields': ('is_active',)}),
         (_('Timestamps'), {'fields': ('created_at', 'updated_at')}),
-    )
-    
-    inlines = [IntegrationInline]
-
-
-class FacebookPageIntegrationInline(admin.StackedInline):
-    """Inline admin for Facebook Page integration details"""
-    model = FacebookPageIntegration
-    can_delete = False
-    fields = ['page_id', 'page_name', 'page_category', 'page_url', 'access_token', 'page_access_token']
-    
-    def has_add_permission(self, request, obj=None):
-        # Only show if integration type is FACEBOOK_PAGE
-        if obj and obj.integration_type == Integration.IntegrationType.FACEBOOK_PAGE:
-            return True
-        return False
-
-
-@admin.register(Integration)
-class IntegrationAdmin(admin.ModelAdmin):
-    """Admin for integrations"""
-    
-    list_display = ['name', 'business', 'integration_type', 'is_active', 'created_at', 'last_synced_at']
-    list_filter = ['integration_type', 'is_active', 'created_at']
-    search_fields = ['name', 'business__name', 'business__organization__name']
-    readonly_fields = ['created_at', 'updated_at', 'last_synced_at']
-    autocomplete_fields = ['business']
-    
-    fieldsets = (
-        (None, {'fields': ('business', 'name', 'integration_type')}),
-        (_('Configuration'), {'fields': ('config',)}),
-        (_('Status'), {'fields': ('is_active',)}),
-        (_('Timestamps'), {'fields': ('created_at', 'updated_at', 'last_synced_at')}),
-    )
-    
-    def get_inlines(self, request, obj):
-        """Dynamically add inline based on integration type"""
-        if obj and obj.integration_type == Integration.IntegrationType.FACEBOOK_PAGE:
-            return [FacebookPageIntegrationInline]
-        return []
-
-
-@admin.register(FacebookPageIntegration)
-class FacebookPageIntegrationAdmin(admin.ModelAdmin):
-    """Admin for Facebook Page integrations"""
-    
-    list_display = ['integration', 'page_name', 'page_id', 'page_category']
-    search_fields = ['page_name', 'page_id', 'integration__name']
-    readonly_fields = ['integration']
-    
-    fieldsets = (
-        (None, {'fields': ('integration',)}),
-        (_('Facebook Page Info'), {'fields': ('page_id', 'page_name', 'page_category', 'page_url')}),
-        (_('Credentials'), {'fields': ('access_token', 'page_access_token')}),
     )

@@ -10,7 +10,7 @@ from .views import (
     UserProfileView,
     ChangePasswordView,
 )
-from .viewsets import OrganizationViewSet, BusinessViewSet, IntegrationViewSet
+from .viewsets import OrganizationViewSet, BusinessViewSet
 
 app_name = 'accounts'
 
@@ -51,22 +51,7 @@ urlpatterns = [
             'delete': 'destroy'
         }),
         name='organization-businesses-detail'
-    ),
-    path(
-        'businesses/<int:business_id>/integrations/',
-        IntegrationViewSet.as_view({'get': 'list', 'post': 'create'}),
-        name='business-integrations-list'
-    ),
-    path(
-        'businesses/<int:business_id>/integrations/<int:id>/',
-        IntegrationViewSet.as_view({
-            'get': 'retrieve',
-            'put': 'update',
-            'patch': 'partial_update',
-            'delete': 'destroy'
-        }),
-        name='business-integrations-detail'
-    ),
+    )
 ]
 
 # Add router URLs
